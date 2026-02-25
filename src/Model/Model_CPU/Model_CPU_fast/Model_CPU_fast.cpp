@@ -90,9 +90,14 @@ void Model_CPU_fast
         rvely_i = xs::fma(raccy_i, (b_type) 2.0f, rvely_i);
         rvelz_i = xs::fma(raccz_i, (b_type) 2.0f, rvelz_i);
 
-        rposx_i.store_unaligned(xs::fma(rvelx_i, (b_type) 1.0f, rposx_i));
-        rposy_i.store_unaligned(xs::fma(rvely_i, (b_type) 1.0f, rposy_i));
-        rposz_i.store_unaligned(xs::fma(rvelz_i, (b_type) 1.0f, rposz_i));
+        b_type tempx = xs::fma(rvelx_i, (b_type) 1.0f, rposx_i);
+        b_type tempy = xs::fma(rvely_i, (b_type) 1.0f, rposy_i);
+        b_type tempz = xs::fma(rvelz_i, (b_type) 1.0f, rposz_i);
+        
+
+        xs::store_unaligned(&particles.x[i], tempx );
+        xs::store_unaligned(&particles.y[i], tempy);
+        xs::store_unaligned(&particles.z[i], tempz);
     }
 
 }
