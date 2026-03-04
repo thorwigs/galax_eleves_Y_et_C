@@ -2,6 +2,7 @@
 
 #include "cuda.h"
 #include "kernel.cuh"
+#include <iostream>
 #define DIFF_T (0.1f)
 #define EPS (1.0f)
 
@@ -12,6 +13,10 @@ __global__ void compute_acc(float3 * positionsGPU, float3 * velocitiesGPU, float
 	if (i >= n_particles) {
 		return;
 	}
+
+	accelerationsGPU[i].x = 0;
+	accelerationsGPU[i].y = 0;
+	accelerationsGPU[i].z = 0;
 
 	for (int j = 0; j < n_particles; j++)
 	{
@@ -63,6 +68,12 @@ void update_position_cu(float3* positionsGPU, float3* velocitiesGPU, float3* acc
 	int nblocks =  (n_particles + (nthreads -1)) / nthreads;
 
 	compute_acc<<<nblocks, nthreads>>>(positionsGPU, velocitiesGPU, accelerationsGPU, massesGPU, n_particles);
+
+	cudaError_t cudaStatus;
+	cudaStatus = cudaDeviceSynchronize();
+	if (cudaStatus != cudaSuccess)
+		std::cout << "error: unable to synchronize threads between compute and maj" << std::endl;
+
 	maj_pos    <<<nblocks, nthreads>>>(positionsGPU, velocitiesGPU, accelerationsGPU, n_particles);
 }
 
