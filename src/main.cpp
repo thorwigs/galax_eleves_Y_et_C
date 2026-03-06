@@ -119,9 +119,10 @@ int main(int argc, char ** argv)
 		{
 			referenceModel->step();
                         float average_error, error_min, error_max;
-                        std::tie(error_min, error_max, average_error) = model->compareParticlesState(*referenceModel, /*returnRelativeDistances*/ true);
+						int n_zeros;
+                        std::tie(error_min, error_max, average_error, n_zeros) = model->compareParticlesState(*referenceModel, /*returnRelativeDistances*/ true);
 			std::cout << " ;               average distance vs reference: " << average_error
-                                  << "; min error : " << error_min << "; max error : " << error_max;
+                                  << "; min error : " << error_min << "; max error : " << error_max << "; errors : " << n_particles - n_zeros << "/" << n_particles << "          ";
 		}
 		std::cout << "\r" << std::flush;
 	}

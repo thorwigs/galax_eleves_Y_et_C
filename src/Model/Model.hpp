@@ -18,7 +18,7 @@ protected:
 public:
     Model(const Initstate& initstate, Particles& particles);
 
-    std::tuple<float, float, float> compareParticlesState(const Model& reference, bool returnRelativeDistances = false);
+    std::tuple<float, float, float, int> compareParticlesState(const Model& reference, bool returnRelativeDistances = false);
 
     virtual ~Model() = default;
 

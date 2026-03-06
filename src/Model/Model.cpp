@@ -13,7 +13,7 @@ Model
 {
 }
 
-std::tuple<float, float, float> Model
+std::tuple<float, float, float, int> Model
 ::compareParticlesState(const Model& referenceModel, bool returnRelativeDistances)
 {
     // Compute the average distance between the particles in the two datasets.
@@ -39,12 +39,14 @@ std::tuple<float, float, float> Model
     if(returnRelativeDistances)
     {
         auto minmax = minmax_element(distances.cbegin(), distances.cend());
-        return {*minmax.first, *minmax.second, std::accumulate(distances.cbegin(), distances.cend(), 0.0) / distances.size()};
+        int n_zeros = std::count(distances.cbegin(), distances.cend(), 0.0);
+        return {*minmax.first, *minmax.second, std::accumulate(distances.cbegin(), distances.cend(), 0.0) / distances.size(), n_zeros};
     }
     else
     {
         auto minmax = minmax_element(relative_distances.cbegin(), relative_distances.cend());
-        return {*minmax.first, *minmax.second, std::accumulate(relative_distances.cbegin(), relative_distances.cend(), 0.0) / relative_distances.size()};
+        int n_zeros = std::count(relative_distances.cbegin(), relative_distances.cend(), 0.0);
+        return {*minmax.first, *minmax.second, std::accumulate(relative_distances.cbegin(), relative_distances.cend(), 0.0) / relative_distances.size(), n_zeros};
     }
 }
 
