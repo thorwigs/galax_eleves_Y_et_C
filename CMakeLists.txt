@@ -48,6 +48,8 @@ if(GALAX_LINK_CUDA)
     add_library (galax_cuda SHARED ${SRC_FILES_CUDA})
 endif(GALAX_LINK_CUDA)
 add_executable(galax ${SRC_FILES_MAIN})
+target_compile_options(galax_cuda PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:--keep;-src-in-ptx>)
+set_target_properties(galax PROPERTIES COMPILE_FLAGS "-save-temps")
 
 # cli
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/lib/cli/include/CLI/CLI.hpp")
