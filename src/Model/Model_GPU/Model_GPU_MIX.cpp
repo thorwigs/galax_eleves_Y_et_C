@@ -4,7 +4,7 @@
 #include <iostream>
 
 #include "Model_GPU_MIX.hpp"
-#include "kernel.cuh"
+#include "kernel_MIX.cuh"
 
 
 inline bool cuda_malloc(void ** devPtr, size_t size)

@@ -22,6 +22,7 @@ set (EXECUTABLE_OUTPUT_PATH bin/)
 
 # Generate the source files lists
 set(SRC_FILES_CUDA    ${CMAKE_CURRENT_SOURCE_DIR}/src/Model/Model_GPU/kernel.cu
+                      ${CMAKE_CURRENT_SOURCE_DIR}/src/Model/Model_GPU/kernel_MIX.cu
                       ${CMAKE_CURRENT_SOURCE_DIR}/src/Model/Model_GPU/Model_GPU.cpp
                       ${CMAKE_CURRENT_SOURCE_DIR}/src/Model/Model_GPU/Model_GPU_MIX.cpp)
 

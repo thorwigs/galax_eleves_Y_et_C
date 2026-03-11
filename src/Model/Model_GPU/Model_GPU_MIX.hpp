@@ -6,7 +6,7 @@
 #include "../Model.hpp"
 
 #include <cuda_runtime.h>
-#include "kernel.cuh"
+#include "kernel_MIX.cuh"
 
 class Model_GPU_MIX : public Model
 {
