@@ -15,6 +15,7 @@
 #include "Model/Model_CPU/Model_CPU_fast/Model_CPU_fast.hpp"
 #include "Model/Model_GPU/Model_GPU.hpp"
 #include "Model/Model_GPU/Model_GPU_MIX.hpp"
+#include "Model/Model_GPU/Model_GPU_graph.hpp"
 
 int main(int argc, char ** argv)
 {
@@ -42,7 +43,7 @@ int main(int argc, char ** argv)
 
 	// define CLI arguments
 	app.add_option("-c,--core"       , core       , "computing version")
-	    ->check(CLI::IsMember({"CPU", "GPU", "GPU_MIX", "CPU_FAST"}));
+	    ->check(CLI::IsMember({"CPU", "GPU", "GPU_MIX", "GPU_graph", "CPU_FAST"}));
 	app.add_option("-n,--n-particles", n_particles , "number of displayed particles")
 	    ->check(CLI::Range(0,max_n_particles));
 	app.add_option("--display"       , display_type, "disable graphical display")
@@ -93,6 +94,8 @@ int main(int argc, char ** argv)
 		model = std::make_unique<Model_GPU>(initstate, particles);
 	else if (core == "GPU_MIX")
 		model = std::make_unique<Model_GPU_MIX>(initstate, particles);
+	else if (core == "GPU_graph")
+		model = std::make_unique<Model_GPU_graph>(initstate, particles);
 #endif
 	else // TODO : add exception
 		exit(EXIT_FAILURE);

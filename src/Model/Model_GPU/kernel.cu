@@ -11,39 +11,68 @@ __global__ void compute_acc(float4 * positionsGPU, float3 * velocitiesGPU, int n
 {
 	unsigned int i = blockIdx.x * blockDim.x + threadIdx.x;
 
-	if (i >= n_particles) {
-		return;
+	float4 pos_i;
+	float3 acc;
+
+	if (i < n_particles) {
+
+		pos_i = positionsGPU[i];
+		acc = {0.0f, 0.0f, 0.0f};
 	}
 
-	float3 acc = {0.0f, 0.0f, 0.0f};
 
-	for (int j = 0; j < n_particles; j++)
+	extern __shared__ float4 sh_positions[];
+
+
+	for (int j = 0; j < n_particles; j=j+blockDim.x)
 	{
-		const float diffx = positionsGPU[j].x - positionsGPU[i].x;
-		const float diffy = positionsGPU[j].y - positionsGPU[i].y;
-		const float diffz = positionsGPU[j].z - positionsGPU[i].z;
 
-		float dij = fmaf(diffx, diffx, fmaf(diffy, diffy, fmaf(diffz, diffz, 0.0f)));
+		__syncthreads();
 
-		if (dij < 1.0)
-		{
-			dij = 10.0;
+		int kp = threadIdx.x;
+		if (j+kp < n_particles)
+			sh_positions[kp] = positionsGPU[j+kp];
+		__syncthreads();
+
+		if (i<n_particles) {
+			// for (int k = 0; k < TAILLE && j+k < n_particles; k++)
+			for (int k = 0; (k < blockDim.x) && ((j+k) < n_particles); k++)
+			{
+				const float diffx = sh_positions[k].x - pos_i.x;
+				const float diffy = sh_positions[k].y - pos_i.y;
+				const float diffz = sh_positions[k].z - pos_i.z;
+
+				// const float diffx = positionsGPU[j].x - pos_i.x;
+				// const float diffy = positionsGPU[j].y - pos_i.y;
+				// const float diffz = positionsGPU[j].z - pos_i.z;
+
+				float dij = fmaf(diffx, diffx, fmaf(diffy, diffy, fmaf(diffz, diffz, 0.0f)));
+
+				if (dij < 1.0)
+				{
+					dij = 10.0;
+				}
+				else
+				{
+					dij = rsqrtf(dij);
+					dij = (10.0 * dij) * (dij * dij);
+				}
+				// dij = rsqrtf(dij);
+				// dij = 10 * (dij * dij * dij);
+				// dij = fminf(10, dij);
+
+				acc.x += diffx * dij * sh_positions[k].w;
+				acc.y += diffy * dij * sh_positions[k].w;
+				acc.z += diffz * dij * sh_positions[k].w;
+			}
 		}
-		else
-		{
-			dij = rsqrtf(dij);
-			dij = 10.0 * (dij * dij * dij);
-		}
-
-		acc.x += diffx * dij * positionsGPU[j].w;
-		acc.y += diffy * dij * positionsGPU[j].w;
-		acc.z += diffz * dij * positionsGPU[j].w;
 	}
 
-	velocitiesGPU[i].x += acc.x * 2.0f;
-	velocitiesGPU[i].y += acc.y * 2.0f;
-	velocitiesGPU[i].z += acc.z * 2.0f;
-
+	if (i < n_particles) {
+		velocitiesGPU[i].x += acc.x * 2.0f;
+		velocitiesGPU[i].y += acc.y * 2.0f;
+		velocitiesGPU[i].z += acc.z * 2.0f;
+	}
 }
 
 __global__ void maj_pos(float4 * positionsGPU, float3 * velocitiesGPU, int n_particles)
@@ -62,10 +91,10 @@ __global__ void maj_pos(float4 * positionsGPU, float3 * velocitiesGPU, int n_par
 
 void update_position_cu(float4* positionsGPU, float3* velocitiesGPU, int n_particles)
 {
-	int nthreads = 32;
+	int nthreads = 128;
 	int nblocks =  (n_particles + (nthreads -1)) / nthreads;
 
-	compute_acc<<<nblocks, nthreads>>>(positionsGPU, velocitiesGPU, n_particles);
+	compute_acc<<<nblocks, nthreads, nthreads*sizeof(float4)>>>(positionsGPU, velocitiesGPU, n_particles);
 	maj_pos    <<<nblocks, nthreads>>>(positionsGPU, velocitiesGPU, n_particles);
 }
 
