@@ -26,46 +26,69 @@ __global__ void compute_acc(float4 * positionsGPU, float3 * velocitiesGPU, int n
 
 	for (int j = 0; j < n_particles; j=j+blockDim.x)
 	{
+		
+		
 
 		__syncthreads();
-
 		int kp = threadIdx.x;
 		if (j+kp < n_particles)
-			sh_positions[kp] = positionsGPU[j+kp];
+			sh_positions[kp] = __ldg(&positionsGPU[j+kp]);
+			// sh_positions[kp] = positionsGPU[j+kp];
 		__syncthreads();
 
+
 		if (i<n_particles) {
+
+			
 			// for (int k = 0; k < TAILLE && j+k < n_particles; k++)
+			#pragma unroll 32
 			for (int k = 0; (k < blockDim.x) && ((j+k) < n_particles); k++)
 			{
-				const float diffx = sh_positions[k].x - pos_i.x;
-				const float diffy = sh_positions[k].y - pos_i.y;
-				const float diffz = sh_positions[k].z - pos_i.z;
+				float4 pj = sh_positions[k];
+
+				float4 diff = make_float4(
+				pj.x - pos_i.x,
+				pj.y - pos_i.y,
+				pj.z - pos_i.z,
+				0.0f
+			);
+			
+				// const float diffx = sh_positions[k].x - pos_i.x;
+				// const float diffy = sh_positions[k].y - pos_i.y;
+				// const float diffz = sh_positions[k].z - pos_i.z;
 
 				// const float diffx = positionsGPU[j].x - pos_i.x;
 				// const float diffy = positionsGPU[j].y - pos_i.y;
 				// const float diffz = positionsGPU[j].z - pos_i.z;
 
-				float dij = fmaf(diffx, diffx, fmaf(diffy, diffy, fmaf(diffz, diffz, 0.0f)));
+				//float dij = fmaf(diff.x, diff.x, fmaf(diff.y, diff.y, fmaf(diff.z, diff.z, 0.0f)));
+				float dij = diff.x * diff.x + diff.y * diff.y + diff.z * diff.z;
 
-				if (dij < 1.0)
-				{
-					dij = 10.0;
-				}
-				else
-				{
-					dij = rsqrtf(dij);
-					dij = (10.0 * dij) * (dij * dij);
-				}
-				// dij = rsqrtf(dij);
-				// dij = 10 * (dij * dij * dij);
-				// dij = fminf(10, dij);
 
-				acc.x += diffx * dij * sh_positions[k].w;
-				acc.y += diffy * dij * sh_positions[k].w;
-				acc.z += diffz * dij * sh_positions[k].w;
+				// if (dij < 1.0)
+				// {
+				// 	dij = 10.0;
+				// }
+				// else
+				// {
+				// 	dij = rsqrtf(dij);
+				// 	dij = 10.0*(dij*dij*dij);
+				// }
+
+				dij = rsqrtf(dij);
+				dij = 10*(dij * dij * dij);
+				dij = fminf(10, dij);
+
+				// float dij = fmaf(diff.x, diff.x, fmaf(diff.y, diff.y, fmaf(diff.z, diff.z, EPS)));
+				// float inv = rsqrtf(dij);
+				// dij = 10.0f * inv * inv * inv;
+
+				acc.x += diff.x * dij * sh_positions[k].w;
+				acc.y += diff.y * dij * sh_positions[k].w;
+				acc.z += diff.z * dij * sh_positions[k].w;
 			}
-		}
+			}
+		
 	}
 
 	if (i < n_particles) {
@@ -91,7 +114,7 @@ __global__ void maj_pos(float4 * positionsGPU, float3 * velocitiesGPU, int n_par
 
 void update_position_cu(float4* positionsGPU, float3* velocitiesGPU, int n_particles)
 {
-	int nthreads = 128;
+	int nthreads = 1024;
 	int nblocks =  (n_particles + (nthreads -1)) / nthreads;
 
 	compute_acc<<<nblocks, nthreads, nthreads*sizeof(float4)>>>(positionsGPU, velocitiesGPU, n_particles);
